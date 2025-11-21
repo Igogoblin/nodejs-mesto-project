@@ -4,11 +4,14 @@
   "description": "A Node.js project using TypeScript, Express, and Mongoose",
   "main": "dist/app.js",
   "scripts": {
-    "lint": "npx eslint src/**/*.ts",
     "build": "tsc",
-    "dev": "ts-node-dev src/app.ts",
     "start": "ts-node src/app.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "npx ts-node-dev --respawn --transpile-only src/app.ts",
+    "build:server": "tsc",
+    "eject": "react-scripts eject",
+    "lint": "npx eslint src/**/*.{ts,tsx}",
+    "prettier": "npx prettier --write ."
   },
   "author": "Skavysh Ihar",
   "license": "ISC",
@@ -20,10 +23,35 @@
     "eslint-plugin-import": "^2.26.0",
     "ts-node": "^10.9.1",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^4.7.4"
+    "typescript": "^4.7.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "prettier": "^3.6.2"
   },
   "dependencies": {
     "express": "^4.18.1",
-    "mongoose": "^6.5.0"
+    "mongoose": "^6.5.0",
+    "@types/mongoose": "^5.11.96",
+    "@typescript-eslint/eslint-plugin": "^8.47.0",
+    "@typescript-eslint/parser": "^8.47.0",
+    "web-vitals": "^1.0.1"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }
