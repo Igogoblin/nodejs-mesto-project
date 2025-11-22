@@ -1,11 +1,35 @@
-const getResponse = (res) => (res.ok ? res.json() : Promise.reject(`Ошибка: ${res.status}`));
+import { LocalStorage } from 'node-localstorage';
+
+const localStorage = new LocalStorage('./scratch');
+const getResponse = async (res: Response) => {
+  if (res.ok) return res.json();
+  return Promise.reject(new Error(`Ошибка: ${res.status}`));
+};
+
+interface IAddCard {
+  name: string;
+  link: string;
+}
+
+interface ISetUserInfo {
+  name: string;
+  about: string;
+}
+
+interface ISetAvatar {
+  avatar: string;
+}
 
 class Api {
-  constructor(address) {
+  private _address: string;
+
+  private _token?: string;
+
+  constructor(address: string) {
     this._address = address;
   }
 
-  setToken(token) {
+  setToken(token: string) {
     this._token = token;
   }
 
@@ -21,21 +45,18 @@ class Api {
     }).then(getResponse);
   }
 
-  addCard({ name, link }) {
+  addCard({ name, link }: IAddCard) {
     return fetch(`${this._address}/cards`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${this._token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        name,
-        link,
-      }),
+      body: JSON.stringify({ name, link }),
     }).then(getResponse);
   }
 
-  removeCard(cardId) {
+  removeCard(cardId: string) {
     return fetch(`${this._address}/cards/${cardId}`, {
       method: 'DELETE',
       headers: {
@@ -54,34 +75,29 @@ class Api {
     }).then(getResponse);
   }
 
-  setUserInfo({ name, about }) {
+  setUserInfo({ name, about }: ISetUserInfo) {
     return fetch(`${this._address}/users/me`, {
       method: 'PATCH',
       headers: {
         Authorization: `Bearer ${this._token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        name,
-        about,
-      }),
+      body: JSON.stringify({ name, about }),
     }).then(getResponse);
   }
 
-  setUserAvatar({ avatar }) {
+  setUserAvatar({ avatar }: ISetAvatar) {
     return fetch(`${this._address}/users/me/avatar`, {
       method: 'PATCH',
       headers: {
         Authorization: `Bearer ${this._token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        avatar,
-      }),
+      body: JSON.stringify({ avatar }),
     }).then(getResponse);
   }
 
-  changeLikeCardStatus(cardId, like) {
+  changeLikeCardStatus(cardId: string, like: boolean) {
     return fetch(`${this._address}/cards/${cardId}/likes`, {
       method: like ? 'PUT' : 'DELETE',
       headers: {
@@ -91,33 +107,29 @@ class Api {
     }).then(getResponse);
   }
 
-  register(email, password) {
+  register(email: string, password: string) {
     return fetch(`${this._address}/signup`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     }).then(getResponse);
   }
 
-  login(email, password) {
+  login(email: string, password: string) {
     return fetch(`${this._address}/signin`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     })
       .then(getResponse)
-      .then((data) => {
+      .then((data: { token: string }) => {
         this.setToken(data.token);
         localStorage.setItem('jwt', data.token);
         return data;
       });
   }
 
-  checkToken(token) {
+  checkToken(token: string) {
     return fetch(`${this._address}/users/me`, {
       method: 'GET',
       headers: {
@@ -127,7 +139,6 @@ class Api {
     }).then(getResponse);
   }
 }
-// Замените на адрес вашего бэкенда
-const api = new Api('http://localhost:3000');
 
+const api = new Api('http://localhost:3000');
 export default api;
