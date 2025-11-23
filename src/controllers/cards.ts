@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import Card from '../models/card';
 import {
   MESSAGE_INVALID_CARD_DATA,
@@ -7,6 +7,10 @@ import {
   STATUS_CREATED,
 } from '../constants/constants';
 import { handleErrors } from './users';
+
+interface AuthRequest extends Request {
+  user?: { _id: string };
+}
 
 const updateCard = async (cardId: string, update: object, res: Response) => {
   try {
@@ -39,15 +43,23 @@ export const createCard = async (req: Request & { user?: { _id: string } }, res:
   }
 };
 
-export const deleteCard = async (req: Request, res: Response) => {
+export const deleteCard = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  const { cardId } = req.params;
+
   try {
-    const card = await Card.findByIdAndDelete(req.params.cardId);
+    const card = await Card.findById(cardId);
     if (!card) {
-      return res.status(STATUS_NOT_FOUND).send({ message: MESSAGE_CARD_NOT_FOUND });
+      return res.status(404).send({ message: 'Карточка не найдена' });
     }
+
+    if (card.owner.toString() !== req.user?._id) {
+      return res.status(403).send({ message: 'Нет прав на удаление этой карточки' });
+    }
+
+    await card.deleteOne();
     return res.send({ message: 'Карточка удалена' });
   } catch (err) {
-    return handleErrors(err, res);
+    return next(err);
   }
 };
 

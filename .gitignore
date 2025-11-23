@@ -19,3 +19,6 @@ dist
 
 # my files
 meFile.txt
+
+# Environment variables
+.env

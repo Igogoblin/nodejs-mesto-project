@@ -1,17 +1,24 @@
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import User from '../models/user';
 import {
   STATUS_NOT_FOUND,
   STATUS_BAD_REQUEST,
   STATUS_SERVER_ERROR,
   STATUS_CREATED,
+  // STATUS_OK,
   MESSAGE_USER_NOT_FOUND,
+  STATUS_UNAUTHORIZED,
   MESSAGE_SERVER_ERROR,
   MESSAGE_INVALID_ID,
   MESSAGE_INVALID_USER_DATA,
   MESSAGE_INVALID_AVATAR,
+  MESSAGE_INVALID_CREDENTIALS,
 } from '../constants/constants';
+
+const { JWT_SECRET = 'your_secret_key' } = process.env;
 
 export const handleErrors = (err: unknown, res: Response, validationMessage?: string) => {
   if (err instanceof mongoose.Error.CastError) {
@@ -84,4 +91,42 @@ export const updateProfile = async (req: Request & { user?: { _id: string } }, r
 
 export const updateAvatar = async (req: Request & { user?: { _id: string } }, res: Response) => {
   return updateUser(req.user!._id, { avatar: req.body.avatar }, res, MESSAGE_INVALID_AVATAR);
+};
+
+export const login = async (req: Request, res: Response) => {
+  const { email, password } = req.body;
+
+  try {
+    const user = await User.findOne({ email }).select('+password'); // включаем password
+    if (!user) {
+      return res.status(STATUS_UNAUTHORIZED).send({ message: MESSAGE_INVALID_CREDENTIALS });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(STATUS_UNAUTHORIZED).send({ message: MESSAGE_INVALID_CREDENTIALS });
+    }
+
+    const token = jwt.sign({ _id: user._id }, JWT_SECRET || 'fallback_secret', {
+      expiresIn: '7d',
+    });
+
+    return res.send({ token });
+  } catch (err) {
+    return res.status(500).send({ message: 'Ошибка сервера' });
+  }
+};
+
+export const getCurrentUser = async (req: Request & { user?: { _id: string } }, res: Response) => {
+  try {
+    const user = await User.findById(req.user?._id);
+
+    if (!user) {
+      return res.status(404).send({ message: 'Пользователь не найден' });
+    }
+
+    return res.send(user);
+  } catch (err) {
+    return handleErrors(err, res);
+  }
 };
