@@ -3,8 +3,13 @@ import fs from 'fs';
 import path from 'path';
 import { Request, Response, NextFunction } from 'express';
 
-const requestsLogPath = path.join(__dirname, '../logs/request.log');
-const errorsLogPath = path.join(__dirname, '../logs/error.log');
+const logsDir = path.join(__dirname, '../logs');
+if (!fs.existsSync(logsDir)) {
+  fs.mkdirSync(logsDir, { recursive: true });
+}
+
+const requestsLogPath = path.join(logsDir, 'request.log');
+const errorsLogPath = path.join(logsDir, 'error.log');
 
 interface LogEntry {
   time: string;
@@ -23,9 +28,13 @@ export const requestLogger = (req: Request, _res: Response, next: NextFunction) 
     url: req.originalUrl,
     body: req.body,
   };
-  fs.appendFile(requestsLogPath, `${JSON.stringify(log)}\n`, (err) => {
-    if (err) console.error('Не удалось записать запрос в лог:', err);
-  });
+
+  try {
+    fs.appendFileSync(requestsLogPath, `${JSON.stringify(log)}\n`);
+  } catch (err) {
+    console.error('Не удалось записать запрос в лог:', err);
+  }
+
   next();
 };
 
@@ -39,8 +48,12 @@ export const errorLogger = (err: unknown, req: Request, res: Response, next: Nex
     status: res.statusCode,
     error: err instanceof Error ? err.message : String(err),
   };
-  fs.appendFile(errorsLogPath, `${JSON.stringify(log)}\n`, (error) => {
-    if (error) console.error('Не удалось записать ошибку в лог:', error);
-  });
+
+  try {
+    fs.appendFileSync(errorsLogPath, `${JSON.stringify(log)}\n`);
+  } catch (error) {
+    console.error('Не удалось записать ошибку в лог:', error);
+  }
+
   next(err);
 };

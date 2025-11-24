@@ -1,18 +1,17 @@
 import { Request, Response, NextFunction } from 'express';
 import Card from '../models/card';
 import {
-  MESSAGE_INVALID_CARD_DATA,
+  // MESSAGE_INVALID_CARD_DATA,
   MESSAGE_CARD_NOT_FOUND,
   STATUS_NOT_FOUND,
   STATUS_CREATED,
 } from '../constants/constants';
-import { handleErrors } from './users';
 
 interface AuthRequest extends Request {
   user?: { _id: string };
 }
 
-const updateCard = async (cardId: string, update: object, res: Response) => {
+const updateCard = async (cardId: string, update: object, res: Response, next: NextFunction) => {
   try {
     const card = await Card.findByIdAndUpdate(cardId, update, { new: true });
     if (!card) {
@@ -20,26 +19,30 @@ const updateCard = async (cardId: string, update: object, res: Response) => {
     }
     return res.send(card);
   } catch (err) {
-    return handleErrors(err, res);
+    return next(err);
   }
 };
 
-export const getCards = async (_req: Request, res: Response) => {
+export const getCards = async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const cards = await Card.find();
     return res.send(cards);
   } catch (err) {
-    return handleErrors(err, res);
+    return next(err);
   }
 };
 
-export const createCard = async (req: Request & { user?: { _id: string } }, res: Response) => {
+export const createCard = async (
+  req: Request & { user?: { _id: string } },
+  res: Response,
+  next: NextFunction,
+) => {
   const { name, link } = req.body;
   try {
     const card = await Card.create({ name, link, owner: req.user!._id });
     return res.status(STATUS_CREATED).send(card);
   } catch (err) {
-    return handleErrors(err, res, MESSAGE_INVALID_CARD_DATA);
+    return next(err);
   }
 };
 
@@ -63,10 +66,18 @@ export const deleteCard = async (req: AuthRequest, res: Response, next: NextFunc
   }
 };
 
-export const likeCard = async (req: Request & { user?: { _id: string } }, res: Response) => {
-  return updateCard(req.params.cardId, { $addToSet: { likes: req.user!._id } }, res);
+export const likeCard = async (
+  req: Request & { user?: { _id: string } },
+  res: Response,
+  next: NextFunction,
+) => {
+  return updateCard(req.params.cardId, { $addToSet: { likes: req.user!._id } }, res, next);
 };
 
-export const dislikeCard = async (req: Request & { user?: { _id: string } }, res: Response) => {
-  return updateCard(req.params.cardId, { $pull: { likes: req.user!._id } }, res);
+export const dislikeCard = async (
+  req: Request & { user?: { _id: string } },
+  res: Response,
+  next: NextFunction,
+) => {
+  return updateCard(req.params.cardId, { $pull: { likes: req.user!._id } }, res, next);
 };
